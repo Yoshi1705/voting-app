@@ -1,0 +1,62 @@
+version: "3.9"
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: mysql-local
+    platform: linux/arm64
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    command: >
+      --default-authentication-plugin=mysql_native_password
+      --bind-address=0.0.0.0
+
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: phpmyadmin-local
+    platform: linux/arm64
+    restart: unless-stopped
+    environment:
+      PMA_HOST: mysql
+      PMA_PORT: 3306
+      PMA_USER: root
+      PMA_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    ports:
+      - "8082:80"
+    depends_on:
+      - mysql
+
+  backend:
+    image: votingsystem
+    container_name: voting-backend
+    depends_on:
+      - mysql
+    ports:
+      - "0.0.0.0:8085:8081"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/${MYSQL_DATABASE}
+      SPRING_DATASOURCE_USERNAME: ${MYSQL_USER}
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRY: ${JWT_EXPIRY:-86400000}
+
+  frontend:
+    build:
+      context: /Users/peddireddypinky/Documents/project/
+      dockerfile: Dockerfile
+    container_name: voting-frontend
+    ports:
+      - "0.0.0.0:3000:80"
+    depends_on:
+      - backend
+
+volumes:
+  mysql_data:
