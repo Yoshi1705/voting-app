@@ -55,3 +55,16 @@ jobs:
         run: |
           docker push ${{ secrets.DOCKER_USERNAME }}/voting-frontend:latest
           docker push ${{ secrets.DOCKER_USERNAME }}/voting-frontend:${{ github.sha }}
+
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_KEY }}
+          script: |
+            cd ~
+            docker compose down
+            docker pull yoshithadev/voting-backend:latest
+            docker pull yoshithadev/voting-frontend:latest
+            docker compose up -d
